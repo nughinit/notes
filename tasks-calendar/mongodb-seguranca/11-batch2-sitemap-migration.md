@@ -1,4 +1,4 @@
-# 11. Migrar os 17 tribunais restantes em sitemap genérico — 10/17 CORRIGIDOS ✅
+# 11. Migrar os 17 tribunais restantes em sitemap genérico — 11/17 CORRIGIDOS ✅
 
 Origem: levantamento pedido pelo usuário para saber quais dos 92 tribunais
 ainda usam fonte fraca (`TJ_SITEMAP_DISCOVERY`/`WORDPRESS_SITEMAP_BROWSER`/
@@ -63,20 +63,56 @@ ato real e refetch idempotente:
   "Verificação de segurança do portal institucional" pedindo o código de
   uma **imagem CAPTCHA** após navegação. **Não contornado.**
 
-## TJRS — investigado, achado inconclusivo (índice de busca obsoleto)
-`tjrs.jus.br` tem um mecanismo de busca real ("Publicações Administrativas",
-aba `pa`) que usa um Google Search Appliance (GSA) legado
-(`www3.tjrs.jus.br/legisla/publ_adm_xml/...`) — funciona via GET simples
-(`novo/busca/?...&site=legisInternaFeed&aba=pa&q=portaria`), sem
-autenticação, retorna resultados reais com citação de ato ("PORTARIA Nº
-33/2016 - OE"). **Mas o índice está travado em 2016** — mesmo pedindo
-ordenação por data (`sort=date:D:S:d1`), nenhum resultado mais recente que
-2016 aparece, sugerindo que esse GSA legado não é mais alimentado (o site
-migrou para outra infra de busca — o link "Legislação Administrativa do
-TJRS" no menu principal não usa mais esse backend). Não é uma fonte viva
-utilizável como está; ficaria como falso "corrigido" se promovido — por
-isso não promovido. Precisaria achar o backend de busca atual (não o GSA
-legado) numa sessão futura.
+## TJRS — corrigido em 2026-08-18 (backend de busca real encontrado)
+Investigação em duas etapas.
+
+**Primeira etapa (achado inicial, descartado):** `tjrs.jus.br` tem dois
+mecanismos de busca full-text baseados num Google Search Appliance (GSA)
+legado — nenhum dos dois serve como fonte viva:
+- aba `pa` ("Publicações Administrativas",
+  `www3.tjrs.jus.br/legisla/publ_adm_xml/...`): **travado em 2016** —
+  mesmo filtrando explicitamente por ano=2026 + tipo=Portaria no formulário
+  de filtro da própria UI, retorna **zero resultados** (não é só
+  deprioridade por relevância, o índice genuinamente não tem nada de 2026)
+- aba `dag` ("Diário da Justiça", "últimos 2 anos" /
+  `dj_principal.php`+GSA): menos obsoleto, mas ainda **~18 meses
+  desatualizado** (resultado mais recente de fev/2025, tanto na busca
+  "exata" quanto na "livre")
+
+Também testei o Diário Oficial do Estado do RS
+(`diariooficial.rs.gov.br`, backend REST real `doe-backend.pro.rs.gov.br/
+public/materias/?...&entidade=...`, confirmado vivo e atualizado no mesmo
+dia) — mas o TJRS (Poder Judiciário) **não publica lá**: o filtro
+`filtroEntidades` da API só lista órgãos do Poder Executivo. Não é a fonte
+certa.
+
+**Achado real:** a home do TJRS (`tjrs.jus.br/novo/`) embute um widget
+"Diário da Justiça" com link pra edição **atual**, ex.:
+`servicos/diario_justica/dj_principal.php?tp=0&ed=8204&pag=1` — um
+paginador PHP legado que **não é indexado pela busca GSA**, e cujo número
+de edição é sempre o mais recente. Confirmado genuinamente vivo: os
+metadados do PDF da página 1 dessa edição têm `CreationDate` de
+17/08/2026 (ontem) e citam "Ato nº 110/2026-P" real, referenciando outro
+ato de abril/2026.
+
+Pipeline sem browser (GET simples):
+1. GET da home → extrai o número da edição atual via regex no link do
+   widget
+2. GET em `dj_principal.php?tp=0&ed=<N>&pag=1` → extrai o campo oculto
+   `ult` (última página)
+3. GET em `chama_pag_move.php?tp=0&ed=<N>&ult=<ULT>&pag=1&...` → PDF puro
+   da página 1 (a home redireciona uma vez por sessão, seguido
+   automaticamente pelo `urllib`)
+4. Extrai texto do PDF com `pypdf`, valida com
+   `content_structure_validator` (citação de ato real + ano + palavra-chave
+   legal), canonicaliza por hash do texto semântico
+
+- [x] `scripts/run_tjrs_dje_l8.py` criado, rodado, proposta aprovada
+      (`approved_by: Nicole`), contrato antigo (`tj_sitemap_discovery`)
+      superado
+- [x] `pypdf` adicionado a
+      `legal_calendar_mongodb_bootstrap_v2_filled/requirements.txt`
+- [x] Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes
 
 ## 2 corrigidos numa segunda rodada (2026-08-18, TJES e TJRJ)
 Mesmo padrão: navegar um nível mais fundo a partir da página de categoria já
@@ -100,10 +136,9 @@ o cookie de sessão — ficou uma proposta de promoção duplicada e órfã no
 Mongo (`pending_promo_TJES_...` da tentativa anterior do TJES, que já tinha
 funcionado); aprovada também por ser inofensiva (mesmo hash canônico).
 
-## Os 7 restantes — ainda não corrigidos
+## Os 6 restantes — ainda não corrigidos
 | Tribunal | Situação |
 |---|---|
-| TJRS | investigado — índice de busca real mas obsoleto, travado em 2016 (ver acima) |
 | TJRO | nenhuma página de menu encontrada via `curl`; ainda precisa browser real |
 | TRF6 | nenhuma página de menu encontrada via `curl`; ainda precisa browser real |
 | TJMSP | home retorna 403 mesmo com browser real (não retestado); site pode estar bloqueando geral |
@@ -112,8 +147,6 @@ funcionado); aprovada também por ser inofensiva (mesmo hash canônico).
 | TJSC | bloqueado por CAPTCHA de imagem numa rodada anterior (ver acima) |
 
 ## Próximos passos sugeridos
-- [ ] Para TJRS: achar o backend de busca atual (não o GSA legado
-      travado em 2016) — provavelmente outro endpoint WordPress/REST
 - [ ] Para os sem menu encontrado (TJRO, TRF6, TJMSP): usar browser real
       (Playwright/Claude Browser) para ver o menu renderizado
 - [ ] Para TRT17/TJSC (bloqueados por verificação humana/bot): avaliar se
@@ -123,3 +156,7 @@ funcionado); aprovada também por ser inofensiva (mesmo hash canônico).
 - [ ] Reavaliar aqui a opção de API paga (Escavador/Judit.io) discutida
       antes, para os casos que continuarem resistentes após uma segunda
       tentativa
+- [ ] Nota geral do achado TJRS: quando um índice de busca institucional
+      (GSA ou similar) existe mas parece obsoleto, vale checar se há um
+      widget de "última edição" na home que não passa pela busca — foi
+      esse o padrão que resolveu o TJRS depois de dois índices mortos
