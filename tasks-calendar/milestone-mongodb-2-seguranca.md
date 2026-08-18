@@ -12,7 +12,7 @@ criticidade (1 = mais crítico).
 
 ## Tasks (por criticidade)
 - [x] [1. Validação estrutural na normalização (evita prazo jurídico errado)](mongodb-seguranca/01-validacao-estrutural-normalizacao.md) ✅ — **CRÍTICO**
-- [ ] [2. Rotacionar e proteger credenciais do Atlas](mongodb-seguranca/02-rotacionar-credenciais-atlas.md) — **CRÍTICO**
+- [ ] [2. Rotacionar e proteger credenciais do Atlas](mongodb-seguranca/02-rotacionar-credenciais-atlas.md) ⚠️ **parcial — precisa de ação manual no console do Atlas** — **CRÍTICO**
 - [ ] [3. Gate de aprovação antes de promoção a L8 / resolução de gap](mongodb-seguranca/03-gate-aprovacao-promocao-l8.md) — **ALTO**
 - [ ] [4. Validação estrutural na triagem (além de palavra-chave)](mongodb-seguranca/04-validacao-estrutural-triagem.md) — **ALTO**
 - [ ] [5. Verificação de autenticidade do conteúdo (assinatura/DNS)](mongodb-seguranca/05-verificacao-autenticidade-conteudo.md) — **MÉDIO-ALTO**
