@@ -19,7 +19,7 @@ criticidade (1 = mais crítico).
 - [ ] [6. Canonicalização não deve ignorar conteúdo relevante renderizado via JS](mongodb-seguranca/06-canonicalizacao-conteudo-js.md) — **MÉDIO**
 - [ ] [7. Revisar risco do bypass anti-bot via Playwright](mongodb-seguranca/07-revisar-bypass-antibot.md) — **MÉDIO**
 - [ ] [8. Rate limiting explícito na coleta em lote](mongodb-seguranca/08-rate-limiting-coleta.md) — **BAIXO**
-- [ ] [9. Migrar tribunais para fonte de Diário real (padrão TJRS/DOE-RS)](mongodb-seguranca/09-migrar-diario-real.md) ⚠️ **investigado, não executado — achou que TJAL está em L8 com fonte sem conteúdo de calendário**
+- [ ] [9. Migrar tribunais para fonte de Diário real (padrão TJRS/DOE-RS)](mongodb-seguranca/09-migrar-diario-real.md) ⚠️ **TJAL corrigido ✅ (API REST real encontrada e promovida via gate), 6 candidatos restantes não executados**
 
 ## Referência
 Origem: análise de segurança do pipeline de coleta/triagem discutida em

@@ -1,4 +1,42 @@
-# 9. Migrar tribunais para fonte de Diário real — INVESTIGADO, NÃO EXECUTADO ⚠️
+# 9. Migrar tribunais para fonte de Diário real — TJAL CORRIGIDO ✅, RESTO NÃO EXECUTADO ⚠️
+
+## TJAL — corrigido em 2026-08-18
+Achado (ver seção abaixo): a evidência L8 do TJAL era um formulário de busca
+vazio do CDJE, sem conteúdo de calendário. Corrigido:
+
+- [x] Navegado o site real (SPA Vue — GET simples só retorna a casca
+      `<div id="app">`, precisou de browser real) até achar o menu
+      "Legislação e Normas > Portaria"
+- [x] Essa página também é renderizada por API — inspecionado o bundle JS
+      carregado (`performance.getEntriesByType('resource')` + grep no bundle)
+      até achar o endpoint real: `documentos.tjal.jus.br/api/documentos/pesquisa-portal`
+      (Laravel REST API, `id_tipo_documento=8` = Portaria, descoberto via
+      `/api/tipos-documentos/todos`)
+- [x] Confirmado: **GET simples funciona** (sem browser, sem WAF), retorna
+      JSON estruturado real — 1183 Portarias de 2026, ementa/texto completo,
+      a mais recente de 17/08/2026 (ontem). Idempotente em 2 fetches
+      (mesmo conjunto de IDs)
+- [x] Criado `scripts/run_tjal_documentos_api_l8.py` (discovery_type
+      `JSON_REST_API`, canonicaliza por tupla ordenada `(id, numero,
+      data_publicacao)`)
+- [x] Corrigido bug no gate (`promotion_gate.py`): `approve_l8_promotion`
+      pulava silenciosamente se o tribunal já estava em L8, mesmo quando a
+      proposta era uma **substituição** de evidência ruim por evidência boa
+      — agora só pula se for exatamente a mesma versão/família já aplicada
+- [x] Rodado o coletor → proposta criada → aprovada via
+      `scripts/approve_promotion.py --approve ... --by "Nicole"` →
+      `courts.TJAL.coverage.evidence_summary` agora aponta pra API real,
+      `coverage_history` preserva a mudança com `approved_by`, contrato
+      antigo (`contract_TJAL_state_court_discovery`) marcado `superseded`
+- [x] Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes
+
+## Os outros 6 candidatos — ainda não executados
+TJES, TJGO, TJMG, TJPA, TJPB, TJRJ continuam pendentes (ver tabela abaixo,
+mantida como estava). O caso do TJAL mostra que vale a pena — mesmo um
+formulário JS "impossível" via GET simples costuma esconder uma API REST
+real por trás (inspecionar `performance.getEntriesByType('resource')` no
+browser + grep no bundle JS por `/api/` é o caminho mais rápido, mais rápido
+que tentar automatizar o formulário em si).
 
 Origem: comparação do `dev-source-registry-92-courts.csv` da Intimatio
 (task/TASK-011 do repo `intimatio/intimatio-business`) contra os
