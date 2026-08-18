@@ -11,7 +11,7 @@ maior de dados (4–7), infra (8) e por fim a verificação final (9).
 
 ## Tasks
 - [x] [1. Resolver os 24 `open_gap_contradicts_l8`](mongodb-perfeito/01-open-gaps-contradicts-l8.md) ✅
-- [ ] [2. Levar `TRT19` de L7 para L8](mongodb-perfeito/02-trt19-l7-para-l8.md)
+- [x] [2. Levar `TRT19` de L7 para L8](mongodb-perfeito/02-trt19-l7-para-l8.md) ✅
 - [ ] [3. Corrigir os 10 `act_relations_broken_refs`](mongodb-perfeito/03-act-relations-broken-refs.md)
 - [ ] [4. Criar `change_events` faltantes](mongodb-perfeito/04-change-events-faltantes.md)
 - [ ] [5. Commitar detecções `CHANGED` pendentes (`TRE-*`)](mongodb-perfeito/05-tre-changed-uncommitted.md)
