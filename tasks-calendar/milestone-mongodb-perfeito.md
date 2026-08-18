@@ -13,8 +13,8 @@ maior de dados (4–7), infra (8) e por fim a verificação final (9).
 - [x] [1. Resolver os 24 `open_gap_contradicts_l8`](mongodb-perfeito/01-open-gaps-contradicts-l8.md) ✅
 - [x] [2. Levar `TRT19` de L7 para L8](mongodb-perfeito/02-trt19-l7-para-l8.md) ✅
 - [x] [3. Corrigir os 10 `act_relations_broken_refs`](mongodb-perfeito/03-act-relations-broken-refs.md) ✅ (8/11 corrigidos, 3/11 gaps genuínos documentados)
-- [ ] [4. Criar `change_events` faltantes](mongodb-perfeito/04-change-events-faltantes.md)
-- [ ] [5. Commitar detecções `CHANGED` pendentes (`TRE-*`)](mongodb-perfeito/05-tre-changed-uncommitted.md)
+- [x] [4. Criar `change_events` faltantes](mongodb-perfeito/04-change-events-faltantes.md) ✅
+- [x] [5. Commitar detecções `CHANGED` pendentes (`TRE-*`)](mongodb-perfeito/05-tre-changed-uncommitted.md) ✅ (nenhuma era mudança real — órfãs/transitórias)
 - [ ] [6. Resolver `source_contracts` sem URL](mongodb-perfeito/06-source-contracts-sem-url.md)
 - [ ] [7. Fechar exceção legada de `monitor_run` (`TRT3`/`TRT10`)](mongodb-perfeito/07-monitor-run-legacy-trt3-trt10.md)
 - [ ] [8. Infra: índice em `provenance`](mongodb-perfeito/08-provenance-index.md)

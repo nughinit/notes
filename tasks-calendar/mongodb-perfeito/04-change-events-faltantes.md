@@ -1,10 +1,12 @@
-# 4. Criar `change_events` para os 27 checks `CHANGED` sem evento
+# 4. Criar `change_events` faltantes — CONCLUÍDO ✅
 
-- [ ] Levantar os 27 `source_checks` com status `CHANGED` que não têm
-      `change_events` correspondente
-- [ ] Para cada um, criar o `change_events` com `court_id`, `source_id`,
-      `detected_at` e o diff/motivo da mudança
-- [ ] Rodar auditoria e confirmar zero em `changed_without_change_event`
+Resolvida junto com a subtask 5 — eram, na prática, a mesma leva de 27 checks
+`CHANGED` sem `checkpoint_advanced`, vistas por duas checagens diferentes da
+auditoria. Ver [05-tre-changed-uncommitted.md](05-tre-changed-uncommitted.md)
+para os detalhes da investigação e correção.
 
-Relacionado a [05-tre-changed-uncommitted.md](05-tre-changed-uncommitted.md) —
-provável mesma leva de mudanças eleitorais não processadas.
+- [x] Levantados os 27 `source_checks` `CHANGED` sem `change_events`
+- [x] Investigado caso a caso — nenhum era uma mudança real pendente de
+      commit; todos eram artefatos órfãos ou detecções transitórias já
+      superadas (ver detalhes na 05)
+- [x] Reauditoria confirma: `changed_without_change_event` não aparece mais
