@@ -21,7 +21,7 @@ criticidade (1 = mais crítico).
 - [ ] [8. Rate limiting explícito na coleta em lote](mongodb-seguranca/08-rate-limiting-coleta.md) — **BAIXO**
 - [ ] [9. Migrar tribunais para fonte de Diário real (padrão TJRS/DOE-RS)](mongodb-seguranca/09-migrar-diario-real.md) ⚠️ **6/7 corrigidos (TJAL, TJGO, TJPA, TJRJ, TJES via [11](mongodb-seguranca/11-batch2-sitemap-migration.md), TJPB via [11](mongodb-seguranca/11-batch2-sitemap-migration.md) — Cloudflare "precisava de bypass" não se confirmou, `urllib` puro bastou), TJMG bloqueado por CAPTCHA real**
 - [ ] [10. Nota: DataJud (CNJ) atrasa meses](mongodb-seguranca/10-datajud-caveat.md) — não usar como fonte de monitoramento em tempo real
-- [ ] [11. Migrar os 17 tribunais restantes em sitemap genérico](mongodb-seguranca/11-batch2-sitemap-migration.md) ⚠️ **13/17 corrigidos (TJAC, TJDFT, TJMA, TJCE, TRT24, TJPR, TJMMG, TRT1, TJES, TJRJ, TJRS, TRF6, TJPB); 2 bloqueados por CAPTCHA/verificação humana, reconfirmado não-temporário (TRT17, TJSC); 2 bloqueados por Akamai, decisão sobre Playwright pendente do usuário (TJRO, TJMSP)**
+- [ ] [11. Migrar os 17 tribunais restantes em sitemap genérico](mongodb-seguranca/11-batch2-sitemap-migration.md) ⚠️ **14/17 corrigidos (TJAC, TJDFT, TJMA, TJCE, TRT24, TJPR, TJMMG, TRT1, TJES, TJRJ, TJRS, TRF6, TJPB, TJSC); TRT17 achou fonte real sem bloqueio mas edição do dia sem Portaria — aguardando próxima edição; 2 bloqueados por Akamai, decisão sobre Playwright pendente do usuário (TJRO, TJMSP)**
 
 ## Referência
 Origem: análise de segurança do pipeline de coleta/triagem discutida em

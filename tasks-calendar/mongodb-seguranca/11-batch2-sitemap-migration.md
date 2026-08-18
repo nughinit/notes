@@ -1,4 +1,4 @@
-# 11. Migrar os 17 tribunais restantes em sitemap genérico — 13/17 CORRIGIDOS ✅
+# 11. Migrar os 17 tribunais restantes em sitemap genérico — 14/17 CORRIGIDOS ✅
 
 Origem: levantamento pedido pelo usuário para saber quais dos 92 tribunais
 ainda usam fonte fraca (`TJ_SITEMAP_DISCOVERY`/`WORDPRESS_SITEMAP_BROWSER`/
@@ -240,16 +240,81 @@ anterior pra ver se eram temporários:
   institucional" pedindo código de imagem CAPTCHA vista antes — mesmo
   bloqueio, não temporário. **Não contornado.**
 
-## Os 2 restantes — ainda não corrigidos
+## TJSC — corrigido em 2026-08-18 (a própria página bloqueada apontava pro backend certo)
+Reavaliado com browser real: a navegação pra `tjsc.jus.br/atos-normativos`
+ainda dispara a página "Verificação de segurança do portal institucional"
+(CAPTCHA de imagem) — bloqueio confirmado, não contornado. Mas um `curl`
+avulso (sem cookies prévios) chegou a passar dessa vez e trouxe a página real
+por trás — e essa página tem uma nota de rodapé decisiva: **"Página meramente
+informativa. Para informações oficiais, consultar o DJe."** A página nunca
+foi a fonte certa.
+
+O link "Diário da Justiça Eletrônico" do menu (`/diario-da-justica-eletronico`)
+faz 302 pra um host completamente diferente, `busca.tjsc.jus.br/dje-consulta`
+— um app Angular servido por JBoss, **sem nenhum desafio WAF/CAPTCHA, sem
+exigir cookies**, confirmado com `curl` puro e zero requisições prévias. O
+`js/rest/buscaRest.js` do próprio app documenta a API REST JSON por trás
+(`rest/diario/ultimos`, `rest/busca?q=...&filtros=edicao:N`), que já retorna
+o texto de cada página (`integra`) direto em JSON — sem precisar baixar/
+parsear PDF.
+
+Pipeline sem browser (GET simples, sem cookies):
+1. GET `rest/diario/ultimos` → acha a edição mais recente com Caderno
+   Administrativo (`cdTipoCaderno=4`, onde portarias são publicadas)
+   disponível
+2. GET `rest/busca?q=portaria&filtros=edicao:<N>&...` → já retorna os
+   trechos de texto (`integra`) de cada página que cita "portaria" naquela
+   edição, direto em JSON
+3. Concatena os textos ordenados por página, valida com
+   `content_structure_validator`, canonicaliza por hash do texto semântico
+
+Citação real confirmada: "PORTARIA DGP N. 1802 DE 14 DE AGOSTO DE 2026",
+edição 4792 de 17/08/2026 (ontem).
+
+- [x] `scripts/run_tj_batch7_l8.py` criado, rodado, proposta aprovada
+      (`pending_promo_TJSC_0e8172abd416461f`, `approved_by: Nicole`)
+- [x] Contrato antigo (`contract_TJSC_tj_sitemap_discovery`) marcado
+      `superseded`
+- [x] Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes
+
+## TRT17 — reinvestigado em 2026-08-18: já não é bloqueio, é falta de conteúdo no dia
+`curl` confirmou de novo `x-amzn-waf-action: challenge` no
+`trt17.jus.br/web/legislacao/w/portarias` — esse caminho segue bloqueado,
+não contornado. Mas achei a fonte real por outro caminho: a home do TRT17
+(`www.trt17.jus.br`) linka pra `app.trt17.jus.br/principal/institucional/
+diario-oficial` — subdomínio ASP.NET/IIS completamente diferente, sem WAF
+nenhum na frente, `curl` puro funciona liso. Essa página lista os links pro
+DEJT (Diário Eletrônico da Justiça do Trabalho), o instrumento oficial de
+publicação de portarias/atos administrativos de todos os TRTs:
+`https://dejt.jt.jus.br/cadernos/Diario_A_17.pdf` (Caderno Administrativo,
+região 17) → redireciona (301) pra `diario.jt.jus.br` (S3+CloudFront),
+`curl` puro, sem cookie, sem sessão, PDF direto, 200 OK.
+
+**Achado**: acesso não é mais o problema — mas a edição atual (segunda-feira,
+17/08/2026, a de terça ainda não saiu porque a publicação é às 19h) só tem um
+Edital e uma Pauta, nenhuma Portaria, então a validação estrutural falha por
+`NO_LEGAL_KEYWORD` (falta de conteúdo, não de acesso — bem diferente de
+TJRO/TJMSP). O app de busca por edições antigas do DEJT
+(`dejt.jt.jus.br/dejt/f/n/diariocon`) que permitiria escolher manualmente uma
+edição com Portaria está fora do ar (503) nas várias tentativas desta sessão
+— parece indisponibilidade genuína do serviço nacional (CSJT), não bloqueio
+direcionado a nós.
+
+**Decisão do usuário**: aguardar e tentar de novo depois (não forçar
+promoção com conteúdo incompleto, não usar o Caderno Judiciário como
+substituto por ser tematicamente menos alinhado — atos processuais, não
+administrativos/calendário).
+
+## O 1 restante fora do escopo de acesso — ainda não corrigido
+| Tribunal | Situação |
+|---|---|
+| TRT17 | acesso resolvido (fonte real sem WAF/CAPTCHA encontrada), mas edição do dia sem Portaria — tentar de novo depois de 19h de hoje ou em sessão futura, ideal seria o app de busca de edições antigas do DEJT (`dejt.jt.jus.br`, hoje fora do ar) voltar pra escolher uma edição com conteúdo relevante |
+
+## Os 2 restantes — ainda não corrigidos (bloqueio de acesso de verdade)
 | Tribunal | Situação |
 |---|---|
 | TJRO | Akamai bloqueia até o browser real na home ("Página Bloqueada"); `curl` retorna 200 mas com script de desafio, não conteúdo real |
 | TJMSP | fonte real encontrada com browser (`atos-e-comunicados/`), mas Akamai retorna 403 pra qualquer cliente HTTP simples, mesmo com headers de browser completos |
-
-Nota: TRT17 e TJSC (bloqueados por CAPTCHA/verificação humana explícita)
-seguem contados como pendentes fora desta tabela — política proíbe
-contornar esse tipo de desafio, então não há próximo passo técnico pra
-eles além de reavaliar de novo mais tarde ou achar fonte alternativa.
 
 ## Decisão do usuário (2026-08-18): TJRO/TJMSP adiados
 Perguntado se valeria construir um coletor Playwright pra TJRO/TJMSP
@@ -264,8 +329,11 @@ aberto pra próxima sessão.
 - [ ] TJRO e TJMSP: decisão pendente do usuário sobre construir um
       coletor Playwright (ver acima) ou tratar como definitivamente fora
       do alcance sem API paga
-- [ ] TRT17/TJSC: bloqueio confirmado não-temporário nesta rodada: avaliar
-      fonte alternativa do mesmo tribunal, ou aceitar como fora do alcance
+- [ ] TRT17: acesso resolvido, falta só uma edição do DEJT com Portaria
+      pra rodar `run_tj_batch7_l8.py`-style e validar — tentar de novo
+      depois de 19h (Brasília) hoje ou em sessão futura; se o app de
+      busca de edições antigas (`dejt.jt.jus.br`) voltar do ar, dá pra
+      escolher uma edição específica em vez de esperar a atual mudar
 - [ ] Reavaliar aqui a opção de API paga (Escavador/Judit.io) discutida
       antes, para os casos que continuarem resistentes
 - [ ] Nota geral do achado TJRS: quando um índice de busca institucional
@@ -277,3 +345,9 @@ aberto pra próxima sessão.
       chamada de rede de verdade) antes de assumir que só funciona com
       JS — o bloqueio Cloudflare nesse caso era só telemetria passiva,
       não um desafio de fato gating as requisições
+- [ ] Nota geral do achado TJSC/TRT17: uma página institucional bloqueada
+      por CAPTCHA/WAF não significa que o tribunal inteiro está bloqueado
+      — vale sempre checar se a página tem uma nota apontando pra fonte
+      oficial alternativa (TJSC dizia isso explicitamente), ou se existe
+      um subdomínio de busca/app separado (`busca.*`, `app.*`) que não
+      está atrás do mesmo WAF/CDN que o domínio principal
