@@ -1,4 +1,4 @@
-# 11. Migrar os 17 tribunais restantes em sitemap genérico — 14/17 CORRIGIDOS ✅
+# 11. Migrar os 17 tribunais restantes em sitemap genérico — 15/17 CORRIGIDOS ✅
 
 Origem: levantamento pedido pelo usuário para saber quais dos 92 tribunais
 ainda usam fonte fraca (`TJ_SITEMAP_DISCOVERY`/`WORDPRESS_SITEMAP_BROWSER`/
@@ -305,12 +305,41 @@ promoção com conteúdo incompleto, não usar o Caderno Judiciário como
 substituto por ser tematicamente menos alinhado — atos processuais, não
 administrativos/calendário).
 
-## O 1 restante fora do escopo de acesso — ainda não corrigido
-| Tribunal | Situação |
-|---|---|
-| TRT17 | acesso resolvido (fonte real sem WAF/CAPTCHA encontrada), mas edição do dia sem Portaria — tentar de novo depois de 19h de hoje ou em sessão futura, ideal seria o app de busca de edições antigas do DEJT (`dejt.jt.jus.br`, hoje fora do ar) voltar pra escolher uma edição com conteúdo relevante |
+## TRT17 — corrigido em 2026-08-18 à noite (edição de terça publicada às 19h saiu com conteúdo válido)
+Reavaliado às ~19h de Brasília (22h UTC) como planejado: a edição de
+terça-feira (N° 4539/2026, 18/08/2026) tinha acabado de sair
+(`Last-Modified` de 21:55 UTC). Não trouxe uma Portaria especificamente,
+mas um "Extrato de Concessão de Diárias" que cita atos administrativos
+reais numerados — "ATOS TRT 17.ª PRESI N.os 106/2023 e 13/2025" — no
+Caderno Administrativo correto. Passou na validação estrutural (citação de
+ato real + ano + palavra-chave "atos").
 
-## Os 2 restantes — ainda não corrigidos (bloqueio de acesso de verdade)
+`scripts/run_tj_batch8_l8.py` (novo, GET simples em
+`dejt.jt.jus.br/cadernos/Diario_A_17.pdf`, que redireciona 301 pra
+`diario.jt.jus.br`, sem cookie/sessão), rodado, hash canônico idêntico nas
+duas coletas.
+
+- [x] Proposto via `promotion_gate` e aprovado
+      (`pending_promo_TRT17_d3e39ff0847c49a0`, `approved_by: Nicole`)
+- [x] Contrato antigo (`contract_TRT17_tj_sitemap_discovery`) marcado
+      `superseded`
+- [x] Auditoria final: `STATUS PASS_WITH_KNOWN_EXCEPTION`, `critical=0`,
+      `warn=1` (21 `coverage_gaps` tipo `SOURCE_COVERAGE_GAP` abertos em
+      outros tribunais — TJAC, TJAL, TJAM, TJAP, TJES, TJMG, TJPA, TJPE,
+      TJPI, TJRJ, TJRO, TJRR, TJSE, TJSP, TRE-AL/AP/MA/MS/PA/RO/SE — não
+      relacionados a este trabalho, sem `created_at`/timestamp recente
+      nos documentos, e o próprio script os trata como categoria
+      "esperado ficar aberto, não é defeito"; confirmado que
+      `approve_l8_promotion` não escreve em `coverage_gaps`, então não
+      foram criados por esta sessão); 62/62 testes
+
+Nota: vale investigar em outra sessão por que esse warn não apareceu nos
+dois audits anteriores desta mesma sessão (antes e logo depois da
+aprovação do TJSC, ambos `warn=0`) — hipótese mais provável é outro
+processo/sessão escrevendo na mesma base Atlas compartilhada entre essas
+duas rodadas, não algo introduzido pelo trabalho de TJSC/TRT17.
+
+## Todos os 17 corrigidos ou resolvidos — restam só TJRO/TJMSP (bloqueio de acesso de verdade)
 | Tribunal | Situação |
 |---|---|
 | TJRO | Akamai bloqueia até o browser real na home ("Página Bloqueada"); `curl` retorna 200 mas com script de desafio, não conteúdo real |
@@ -329,11 +358,7 @@ aberto pra próxima sessão.
 - [ ] TJRO e TJMSP: decisão pendente do usuário sobre construir um
       coletor Playwright (ver acima) ou tratar como definitivamente fora
       do alcance sem API paga
-- [ ] TRT17: acesso resolvido, falta só uma edição do DEJT com Portaria
-      pra rodar `run_tj_batch7_l8.py`-style e validar — tentar de novo
-      depois de 19h (Brasília) hoje ou em sessão futura; se o app de
-      busca de edições antigas (`dejt.jt.jus.br`) voltar do ar, dá pra
-      escolher uma edição específica em vez de esperar a atual mudar
+- [x] TRT17: corrigido em 2026-08-18 à noite (ver acima)
 - [ ] Reavaliar aqui a opção de API paga (Escavador/Judit.io) discutida
       antes, para os casos que continuarem resistentes
 - [ ] Nota geral do achado TJRS: quando um índice de busca institucional
