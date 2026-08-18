@@ -1,4 +1,4 @@
-# 11. Migrar os 17 tribunais restantes em sitemap genérico — 11/17 CORRIGIDOS ✅
+# 11. Migrar os 17 tribunais restantes em sitemap genérico — 12/17 CORRIGIDOS ✅
 
 Origem: levantamento pedido pelo usuário para saber quais dos 92 tribunais
 ainda usam fonte fraca (`TJ_SITEMAP_DISCOVERY`/`WORDPRESS_SITEMAP_BROWSER`/
@@ -136,19 +136,76 @@ o cookie de sessão — ficou uma proposta de promoção duplicada e órfã no
 Mongo (`pending_promo_TJES_...` da tentativa anterior do TJES, que já tinha
 funcionado); aprovada também por ser inofensiva (mesmo hash canônico).
 
-## Os 6 restantes — ainda não corrigidos
+## TRF6 — corrigido em 2026-08-18 (browser real achou o menu que o `curl` não achava)
+Com browser real (Claude Browser), naveguei Home → "Publicações" →
+"Atos Administrativos" → **"Principais Atos do TRF6"**
+(`portal.trf6.jus.br/institucional/publicacoes/atos-administrativos/principais-atos-do-trf6/`):
+uma tabela WordPress/Oxygen simples e estática, sem SPA nem chamada de
+API separada — confirmado via `read_network_requests` que a própria
+requisição HTML principal (200) já traz a tabela. Citações reais, ex.
+"Portaria Conjunta 3ª Vcrim e 13ª Vara n. 1, de 13 de agosto de 2026",
+mais recente 14/08/2026 (ontem). O `curl` anterior provavelmente não
+achou porque a URL fica dois níveis dentro do menu "Publicações" (não é
+alcançável só pela home).
+
+Pipeline sem browser: GET simples (`urllib`), sem cookie, sem sessão —
+`scripts/run_tj_batch5_l8.py` (novo, cobre só TRF6), passou na validação
+estrutural (subtask 4) com citação de ato real e refetch idempotente
+(hash canônico igual nas duas coletas).
+
+- [x] Proposto via `promotion_gate` e aprovado (`approve_promotion.py
+      --approve pending_promo_TRF6_c88bddcff60f44e0 --by "Nicole"`)
+- [x] Contrato antigo (`contract_TRF6_tj_sitemap_discovery`) marcado
+      `superseded`
+- [x] Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes
+
+## TJRO e TJMSP — investigados com browser real, continuam bloqueados (Akamai, não contornados)
+Ambos usam mitigação de bot da Akamai, mas se manifestam diferente:
+
+- **TJRO** (`tjro.jus.br`): a navegação da home com browser real é
+  bloqueada direto — página "STIC - Página Bloqueada", "Seu acesso a
+  esta página foi bloqueado por suspeita de robotização". O `curl` puro
+  retorna HTTP 200, mas o corpo é um script de desafio Akamai ofuscado
+  (`window["loaderConfig"] = "/TSPD/?type=20"`), não a página real — ou
+  seja, "200" é enganoso, não é conteúdo utilizável. Mais restritivo que
+  o TJMSP: aqui nem o browser real passa.
+- **TJMSP** (`tjmsp.jus.br`): o browser real funciona bem e encontrei a
+  fonte certa — Publicações → **"Atos e Comunicados"**
+  (`tjmsp.jus.br/atos-e-comunicados/`), uma listagem JetEngine/
+  JetSmartFilters de Resoluções/Portarias/Comunicados/Instruções/
+  Provimentos já populada sem precisar submeter busca (ex. "Portaria nº
+  2027/2026-Corregedoria Geral da JMESP", 13/08/2026, regulamenta
+  Resolução nº 135/2026). Mas **toda requisição via `curl`/`urllib`
+  recebe HTTP 403 da Akamai, inclusive na home**, mesmo com headers
+  completos de browser (`User-Agent`, `Accept`, `Accept-Language`) — não
+  é bloqueio por User-Agent, é fingerprinting de TLS/comportamento que o
+  `curl` não consegue replicar.
+
+Em ambos os casos, **não contornado** — política proíbe. A diferença
+prática de TRT17/TJSC (bloqueados por CAPTCHA de imagem/verificação
+humana explícita) é que aqui não há um desafio para "resolver": mesmo
+sem CAPTCHA visível, o site rejeita qualquer cliente HTTP simples,
+então a única forma de automatizar seria rodar um browser completo a
+cada ciclo de coleta — fora do escopo hoje, mesma categoria de risco
+já sinalizada na subtask
+[7](07-revisar-bypass-antibot.md).
+
+## Os 4 restantes — ainda não corrigidos
 | Tribunal | Situação |
 |---|---|
-| TJRO | nenhuma página de menu encontrada via `curl`; ainda precisa browser real |
-| TRF6 | nenhuma página de menu encontrada via `curl`; ainda precisa browser real |
-| TJMSP | home retorna 403 mesmo com browser real (não retestado); site pode estar bloqueando geral |
+| TJRO | Akamai bloqueia até o browser real na home ("Página Bloqueada"); `curl` retorna 200 mas com script de desafio, não conteúdo real |
+| TJMSP | fonte real encontrada com browser (`atos-e-comunicados/`), mas Akamai retorna 403 pra qualquer cliente HTTP simples, mesmo com headers de browser completos |
 | TJPB | já documentado em [09](09-migrar-diario-real.md) — Cloudflare + JSF AJAX sem API direta |
 | TRT17 | bloqueado por Human Verification numa rodada anterior (ver acima) |
 | TJSC | bloqueado por CAPTCHA de imagem numa rodada anterior (ver acima) |
 
 ## Próximos passos sugeridos
-- [ ] Para os sem menu encontrado (TJRO, TRF6, TJMSP): usar browser real
-      (Playwright/Claude Browser) para ver o menu renderizado
+- [ ] TJRO e TJMSP: ambos exigem rodar um browser completo por ciclo de
+      coleta (Akamai bloqueia clientes HTTP simples) — decidir se vale
+      construir um coletor baseado em Playwright pra esses dois
+      especificamente (ver preocupação já registrada na subtask
+      [7](07-revisar-bypass-antibot.md)) ou tratar como definitivamente
+      fora do alcance sem API paga
 - [ ] Para TRT17/TJSC (bloqueados por verificação humana/bot): avaliar se
       vale reter e tentar de novo mais tarde (pode ser rate-limit
       temporário por navegação rápida) ou se há fonte alternativa do
