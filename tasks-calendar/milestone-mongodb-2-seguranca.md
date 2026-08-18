@@ -19,7 +19,7 @@ criticidade (1 = mais crítico).
 - [ ] [6. Canonicalização não deve ignorar conteúdo relevante renderizado via JS](mongodb-seguranca/06-canonicalizacao-conteudo-js.md) — **MÉDIO**
 - [ ] [7. Revisar risco do bypass anti-bot via Playwright](mongodb-seguranca/07-revisar-bypass-antibot.md) — **MÉDIO**
 - [ ] [8. Rate limiting explícito na coleta em lote](mongodb-seguranca/08-rate-limiting-coleta.md) — **BAIXO**
-- [ ] [9. Migrar tribunais para fonte de Diário real (padrão TJRS/DOE-RS)](mongodb-seguranca/09-migrar-diario-real.md) ⚠️ **TJAL corrigido ✅ (API REST real encontrada e promovida via gate), 6 candidatos restantes não executados**
+- [ ] [9. Migrar tribunais para fonte de Diário real (padrão TJRS/DOE-RS)](mongodb-seguranca/09-migrar-diario-real.md) ⚠️ **3/7 corrigidos (TJAL, TJGO, TJPA), 2 bloqueados por CAPTCHA real (TJMG, TJES), 2 pendentes (TJPB, TJRJ — precisam automação de formulário)**
 
 ## Referência
 Origem: análise de segurança do pipeline de coleta/triagem discutida em

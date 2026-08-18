@@ -30,13 +30,73 @@ vazio do CDJE, sem conteúdo de calendário. Corrigido:
       antigo (`contract_TJAL_state_court_discovery`) marcado `superseded`
 - [x] Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes
 
-## Os outros 6 candidatos — ainda não executados
-TJES, TJGO, TJMG, TJPA, TJPB, TJRJ continuam pendentes (ver tabela abaixo,
-mantida como estava). O caso do TJAL mostra que vale a pena — mesmo um
-formulário JS "impossível" via GET simples costuma esconder uma API REST
-real por trás (inspecionar `performance.getEntriesByType('resource')` no
-browser + grep no bundle JS por `/api/` é o caminho mais rápido, mais rápido
-que tentar automatizar o formulário em si).
+## TJGO — corrigido em 2026-08-18
+Site é SPA React (`tjdocs.tjgo.jus.br`). Achado via inspeção de rede:
+backend `tjdocs-backend.tjgo.jus.br`. A busca completa (`POST /documentos`)
+exige permissão (403 "Acesso negado" — autenticado). Mas o endpoint público
+`GET /documentos/ultima-atualizacao/todos` (o mesmo que a home page usa pra
+mostrar "Último documento atualizado") funciona via GET simples, é real e
+muda de verdade entre chamadas (confirmei 2 valores diferentes minutos
+seguidos, provando publicação ativa). Formato do número do ato varia (nem
+sempre tem ano junto) — validação relaxada pra só exigir dígito presente +
+ano plausível em `ultimaAtualizacao`.
+- [x] `scripts/run_tjgo_documentos_api_l8.py` criado, rodado, proposta
+      aprovada (`approved_by: Nicole`), contrato antigo (`tj_sitemap_discovery`)
+      superado
+- ⚠️ Limitação documentada: é um checkpoint do **último documento**, não
+      uma listagem completa (busca completa exige autenticação)
+
+## TJPA — corrigido em 2026-08-18
+Site é SPA Angular. Achado via inspeção de rede: API REST real
+`dje.tjpa.jus.br/DJEletronico/rest/DJEletronicoService/publicacao/ultimoDiario`
+— funciona via GET simples (sem browser), retorna a edição atual do DJE-PA
+de verdade (edição 8381/2026, publicada 18/08/2026 — hoje). Idempotente.
+- [x] `scripts/run_tjpa_dje_api_l8.py` criado, rodado, proposta aprovada
+      (`approved_by: Nicole`), contrato antigo (`superior_federal`) superado
+
+## TJMG e TJES — bloqueados por verificação humana real, não contornados
+- **TJMG** (`dje.tjmg.jus.br`): a home carrega bem, mas a página de
+  "Última Edição" (o conteúdo real e atual) exige resolver um **CAPTCHA de
+  imagem** ("Digite os números abaixo... gere nova imagem ou escute o
+  código") antes de mostrar qualquer diário. "Atos Normativos" só tem 2
+  itens estáticos de 2008 (fundação do DJe), não serve como fonte viva.
+  **Não tentei contornar o CAPTCHA** — é uma ação proibida por política.
+  Fica bloqueado até haver outra fonte ou acesso autorizado.
+- **TJES** (`sistemas.tjes.jus.br/ediario`): título da página é
+  "Human Verification" — desafio da AWS WAF que exige interação humana.
+  **Mesmo tratamento: não contornado.**
+
+## TJPB e TJRJ — não executados, precisam de automação de formulário mais pesada
+Diferente do TJAL/TJGO/TJPA (onde achei uma API REST simples por trás do
+SPA), esses dois não têm atalho de API:
+- **TJPB** (`app.tjpb.jus.br/dje/...buscas.jsf`): protegido por desafio
+  Cloudflare (JS proof-of-work, resolvido automaticamente pelo browser real —
+  não é CAPTCHA humano, então não é uma barreira ética, só técnica). A lista
+  de edições recentes (`Diário de 18/08/2026`, etc.) aparece na tela, mas os
+  links são `href="#"` — carregados via JSF AJAX sem endpoint REST direto
+  identificado. `curl` simples não retorna a lista (só a casca do formulário)
+- **TJRJ** (`www3.tjrj.jus.br/consultadje`): ASP.NET WebForms clássico —
+  sem nenhuma chamada AJAX/fetch capturada (`performance.getEntriesByType`
+  retornou vazio), ou seja busca é feita por postback de página inteira com
+  viewstate. Precisaria de automação real de formulário (Playwright
+  preenchendo e submetendo), não um atalho de API
+
+Ambos ficam como trabalho futuro — cada um precisaria de uma sessão de
+investigação própria (Playwright + interação de formulário), fora do escopo
+resolvido agora.
+
+## Resumo da rodada
+| Tribunal | Resultado |
+|---|---|
+| TJAL | ✅ corrigido (API REST real) |
+| TJGO | ✅ corrigido (API REST real, checkpoint parcial) |
+| TJPA | ✅ corrigido (API REST real) |
+| TJMG | ❌ bloqueado — CAPTCHA real, não contornado |
+| TJES | ❌ bloqueado — verificação humana AWS WAF, não contornado |
+| TJPB | ⏸️ não executado — precisa automação de formulário JSF/Cloudflare |
+| TJRJ | ⏸️ não executado — precisa automação de formulário ASP.NET postback |
+
+Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes.
 
 Origem: comparação do `dev-source-registry-92-courts.csv` da Intimatio
 (task/TASK-011 do repo `intimatio/intimatio-business`) contra os
