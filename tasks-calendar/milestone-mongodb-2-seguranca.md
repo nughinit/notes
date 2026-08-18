@@ -19,9 +19,9 @@ criticidade (1 = mais crítico).
 - [ ] [6. Canonicalização não deve ignorar conteúdo relevante renderizado via JS](mongodb-seguranca/06-canonicalizacao-conteudo-js.md) — **MÉDIO**
 - [ ] [7. Revisar risco do bypass anti-bot via Playwright](mongodb-seguranca/07-revisar-bypass-antibot.md) — **MÉDIO**
 - [ ] [8. Rate limiting explícito na coleta em lote](mongodb-seguranca/08-rate-limiting-coleta.md) — **BAIXO**
-- [ ] [9. Migrar tribunais para fonte de Diário real (padrão TJRS/DOE-RS)](mongodb-seguranca/09-migrar-diario-real.md) ⚠️ **3/7 corrigidos (TJAL, TJGO, TJPA), 2 bloqueados por CAPTCHA real (TJMG, TJES), 2 pendentes (TJPB, TJRJ — precisam automação de formulário)**
+- [ ] [9. Migrar tribunais para fonte de Diário real (padrão TJRS/DOE-RS)](mongodb-seguranca/09-migrar-diario-real.md) ⚠️ **4/7 corrigidos (TJAL, TJGO, TJPA, TJRJ — este via [11](mongodb-seguranca/11-batch2-sitemap-migration.md), fonte diferente da originalmente cogitada), TJMG bloqueado por CAPTCHA real, TJES corrigido via [11](mongodb-seguranca/11-batch2-sitemap-migration.md), 1 pendente (TJPB — precisa automação de formulário)**
 - [ ] [10. Nota: DataJud (CNJ) atrasa meses](mongodb-seguranca/10-datajud-caveat.md) — não usar como fonte de monitoramento em tempo real
-- [ ] [11. Migrar os 17 tribunais restantes em sitemap genérico](mongodb-seguranca/11-batch2-sitemap-migration.md) ⚠️ **8/17 corrigidos (TJAC, TJDFT, TJMA, TJCE, TRT24, TJPR, TJMMG, TRT1); 2 bloqueados por CAPTCHA/verificação humana (TRT17, TJSC); 9 restantes**
+- [ ] [11. Migrar os 17 tribunais restantes em sitemap genérico](mongodb-seguranca/11-batch2-sitemap-migration.md) ⚠️ **10/17 corrigidos (TJAC, TJDFT, TJMA, TJCE, TRT24, TJPR, TJMMG, TRT1, TJES, TJRJ); 2 bloqueados por CAPTCHA/verificação humana (TRT17, TJSC); 7 restantes**
 
 ## Referência
 Origem: análise de segurança do pipeline de coleta/triagem discutida em

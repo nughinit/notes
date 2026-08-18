@@ -1,4 +1,4 @@
-# 9. Migrar tribunais para fonte de Diário real — TJAL CORRIGIDO ✅, RESTO NÃO EXECUTADO ⚠️
+# 9. Migrar tribunais para fonte de Diário real — 4/7 CORRIGIDOS ✅
 
 ## TJAL — corrigido em 2026-08-18
 Achado (ver seção abaixo): a evidência L8 do TJAL era um formulário de busca
@@ -54,7 +54,7 @@ de verdade (edição 8381/2026, publicada 18/08/2026 — hoje). Idempotente.
 - [x] `scripts/run_tjpa_dje_api_l8.py` criado, rodado, proposta aprovada
       (`approved_by: Nicole`), contrato antigo (`superior_federal`) superado
 
-## TJMG e TJES — bloqueados por verificação humana real, não contornados
+## TJMG — bloqueado por verificação humana real, não contornado
 - **TJMG** (`dje.tjmg.jus.br`): a home carrega bem, mas a página de
   "Última Edição" (o conteúdo real e atual) exige resolver um **CAPTCHA de
   imagem** ("Digite os números abaixo... gere nova imagem ou escute o
@@ -62,39 +62,51 @@ de verdade (edição 8381/2026, publicada 18/08/2026 — hoje). Idempotente.
   itens estáticos de 2008 (fundação do DJe), não serve como fonte viva.
   **Não tentei contornar o CAPTCHA** — é uma ação proibida por política.
   Fica bloqueado até haver outra fonte ou acesso autorizado.
-- **TJES** (`sistemas.tjes.jus.br/ediario`): título da página é
-  "Human Verification" — desafio da AWS WAF que exige interação humana.
-  **Mesmo tratamento: não contornado.**
 
-## TJPB e TJRJ — não executados, precisam de automação de formulário mais pesada
+## TJES — corrigido, mas por uma fonte diferente da originalmente cogitada (2026-08-18)
+`sistemas.tjes.jus.br/ediario` continua bloqueado (título "Human
+Verification", desafio AWS WAF que exige interação humana — não
+contornado). Mas achei uma fonte alternativa real do mesmo tribunal via
+[subtask 11](11-batch2-sitemap-migration.md): `www.tjes.jus.br/publicacoes/
+atos-normativos-tjes/atos-normativos-2026/` — página estática simples
+(WordPress), sem WAF/CAPTCHA, lista todos os Atos Normativos do ano com
+número/ementa/data, atualizada no mesmo dia. Promovida a L8.
+
+## TJPB — não executado, precisa de automação de formulário mais pesada
 Diferente do TJAL/TJGO/TJPA (onde achei uma API REST simples por trás do
-SPA), esses dois não têm atalho de API:
+SPA), esse não tem atalho de API:
 - **TJPB** (`app.tjpb.jus.br/dje/...buscas.jsf`): protegido por desafio
   Cloudflare (JS proof-of-work, resolvido automaticamente pelo browser real —
   não é CAPTCHA humano, então não é uma barreira ética, só técnica). A lista
   de edições recentes (`Diário de 18/08/2026`, etc.) aparece na tela, mas os
   links são `href="#"` — carregados via JSF AJAX sem endpoint REST direto
   identificado. `curl` simples não retorna a lista (só a casca do formulário)
-- **TJRJ** (`www3.tjrj.jus.br/consultadje`): ASP.NET WebForms clássico —
-  sem nenhuma chamada AJAX/fetch capturada (`performance.getEntriesByType`
-  retornou vazio), ou seja busca é feita por postback de página inteira com
-  viewstate. Precisaria de automação real de formulário (Playwright
-  preenchendo e submetendo), não um atalho de API
+Fica como trabalho futuro — precisaria de uma sessão de investigação
+própria (Playwright + interação de formulário), fora do escopo resolvido
+agora. `www3.tjrj.jus.br/consultadje` (ASP.NET WebForms, postback com
+viewstate) continua sem atalho de API, mas deixou de ser bloqueante para o
+TJRJ — ver nota abaixo.
 
-Ambos ficam como trabalho futuro — cada um precisaria de uma sessão de
-investigação própria (Playwright + interação de formulário), fora do escopo
-resolvido agora.
+## TJRJ — corrigido, mas por uma fonte diferente da originalmente cogitada (2026-08-18)
+`www3.tjrj.jus.br/consultadje` (o DJE via postback ASP.NET) segue sem
+automação. Mas achei uma fonte real e melhor via
+[subtask 11](11-batch2-sitemap-migration.md), navegando pelo menu
+"Portal do Conhecimento > Legislação > Atos Oficiais do PJERJ":
+`www3.tjrj.jus.br/Atosofic2leg/Busca/CategoriaLegislacao?codigo=5` — sistema
+"Sophia Biblioteca Web", 26 portarias reais, mais recente publicada
+17/08/2026. Exige cookie de sessão obtido via redirect, resolvido com
+`http.cookiejar` no coletor, sem browser. Promovida a L8.
 
-## Resumo da rodada
+## Resumo da rodada (2026-08-18, primeira parte)
 | Tribunal | Resultado |
 |---|---|
 | TJAL | ✅ corrigido (API REST real) |
 | TJGO | ✅ corrigido (API REST real, checkpoint parcial) |
 | TJPA | ✅ corrigido (API REST real) |
 | TJMG | ❌ bloqueado — CAPTCHA real, não contornado |
-| TJES | ❌ bloqueado — verificação humana AWS WAF, não contornado |
+| TJES | ❌ bloqueado nesta rodada — verificação humana AWS WAF, não contornado (corrigido depois por outra fonte, ver acima) |
 | TJPB | ⏸️ não executado — precisa automação de formulário JSF/Cloudflare |
-| TJRJ | ⏸️ não executado — precisa automação de formulário ASP.NET postback |
+| TJRJ | ⏸️ não executado nesta rodada — precisa automação de formulário ASP.NET postback (corrigido depois por outra fonte, ver acima) |
 
 Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes.
 

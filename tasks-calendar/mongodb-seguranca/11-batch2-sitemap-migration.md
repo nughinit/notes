@@ -1,4 +1,4 @@
-# 11. Migrar os 17 tribunais restantes em sitemap genérico — 8/17 CORRIGIDOS ✅
+# 11. Migrar os 17 tribunais restantes em sitemap genérico — 10/17 CORRIGIDOS ✅
 
 Origem: levantamento pedido pelo usuário para saber quais dos 92 tribunais
 ainda usam fonte fraca (`TJ_SITEMAP_DISCOVERY`/`WORDPRESS_SITEMAP_BROWSER`/
@@ -78,31 +78,48 @@ utilizável como está; ficaria como falso "corrigido" se promovido — por
 isso não promovido. Precisaria achar o backend de busca atual (não o GSA
 legado) numa sessão futura.
 
-## Os 9 restantes — ainda não corrigidos
+## 2 corrigidos numa segunda rodada (2026-08-18, TJES e TJRJ)
+Mesmo padrão: navegar um nível mais fundo a partir da página de categoria já
+conhecida. `scripts/run_tj_batch4_l8.py` (novo, cobre os 2 de uma vez), ambos
+passaram na validação estrutural com citação de ato real e refetch
+idempotente:
+
+| Tribunal | Fonte real encontrada | Nota |
+|---|---|---|
+| TJES | `tjes.jus.br/publicacoes/atos-normativos-tjes/atos-normativos-2026/` (clicando no ano "2026" a partir do índice) | página estática simples, lista todos os Atos Normativos do ano com número/ementa/data de disponibilização; ato 137 disponibilizado no mesmo dia (18/08/2026); vários diretamente relevantes ao calendário (suspensão de expediente, prorrogação de prazo) |
+| TJRJ | `www3.tjrj.jus.br/Atosofic2leg/Busca/CategoriaLegislacao?codigo=5` (menu "Atos Oficiais do PJERJ" → categoria Portarias) | sistema "Sophia Biblioteca Web", diferente do `consultadje` (ASP.NET postback) documentado em [09](09-migrar-diario-real.md) — 26 portarias reais, mais recente publicada 17/08/2026; exige cookie de sessão (`SBW.Terminal.Sessao`) obtido via redirect — resolvido com `http.cookiejar` no coletor, sem precisar de browser |
+
+- [x] Ambos propostos via `promotion_gate` e aprovados
+      (`approve_promotion.py --by "Nicole"`)
+- [x] Contratos antigos (`tj_sitemap_discovery`) marcados `superseded`
+- [x] Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes
+
+Nota: a primeira tentativa de coleta do TJRJ falhou (`NO_LEGAL_KEYWORD`)
+porque o fetch inicial via `urllib` puro recebia só a casca vazia do SPA sem
+o cookie de sessão — ficou uma proposta de promoção duplicada e órfã no
+Mongo (`pending_promo_TJES_...` da tentativa anterior do TJES, que já tinha
+funcionado); aprovada também por ser inofensiva (mesmo hash canônico).
+
+## Os 7 restantes — ainda não corrigidos
 | Tribunal | Situação |
 |---|---|
-| TJES | página de categoria com poucas menções, provável página de categoria — não revisitado nesta rodada |
-| TJRJ | página de categoria com só 1 menção — não revisitado nesta rodada; ver também [09](09-migrar-diario-real.md) (formulário ASP.NET) |
-| TJRS | investigado nesta rodada — índice de busca real mas obsoleto (ver acima) |
+| TJRS | investigado — índice de busca real mas obsoleto, travado em 2016 (ver acima) |
 | TJRO | nenhuma página de menu encontrada via `curl`; ainda precisa browser real |
 | TRF6 | nenhuma página de menu encontrada via `curl`; ainda precisa browser real |
-| TJMSP | home retorna 403 mesmo com browser real (não testado nesta rodada); site pode estar bloqueando geral |
+| TJMSP | home retorna 403 mesmo com browser real (não retestado); site pode estar bloqueando geral |
 | TJPB | já documentado em [09](09-migrar-diario-real.md) — Cloudflare + JSF AJAX sem API direta |
-| TRT17 | bloqueado por Human Verification nesta rodada (ver acima) |
-| TJSC | bloqueado por CAPTCHA de imagem nesta rodada (ver acima) |
+| TRT17 | bloqueado por Human Verification numa rodada anterior (ver acima) |
+| TJSC | bloqueado por CAPTCHA de imagem numa rodada anterior (ver acima) |
 
 ## Próximos passos sugeridos
-- [ ] Para TJES e TJRJ: repetir o mesmo padrão desta rodada (navegar um
-      nível mais fundo, capturar a chamada de rede real por trás do
-      formulário/busca de cada site)
 - [ ] Para TJRS: achar o backend de busca atual (não o GSA legado
       travado em 2016) — provavelmente outro endpoint WordPress/REST
 - [ ] Para os sem menu encontrado (TJRO, TRF6, TJMSP): usar browser real
       (Playwright/Claude Browser) para ver o menu renderizado
-- [ ] Para TRT17/TJSC (bloqueados por verificação humana/bot nesta
-      rodada): avaliar se vale reter e tentar de novo mais tarde (pode ser
-      rate-limit temporário por navegação rápida) ou se há fonte
-      alternativa do mesmo tribunal
+- [ ] Para TRT17/TJSC (bloqueados por verificação humana/bot): avaliar se
+      vale reter e tentar de novo mais tarde (pode ser rate-limit
+      temporário por navegação rápida) ou se há fonte alternativa do
+      mesmo tribunal
 - [ ] Reavaliar aqui a opção de API paga (Escavador/Judit.io) discutida
       antes, para os casos que continuarem resistentes após uma segunda
       tentativa
