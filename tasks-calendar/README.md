@@ -10,3 +10,6 @@ Tasks do projeto `legal_calendar_mongodb_v6_dejt_l8_candidate`.
 - [ ] [API para Intimatio funcionando](milestone-api-intimatio.md) — não
       iniciado. Depende do milestone MongoDB perfeito (concluído — pode
       começar).
+- [ ] [MongoDB 2 — Segurança da triagem](milestone-mongodb-2-seguranca.md) —
+      não iniciado. Vulnerabilidades do pipeline de coleta/triagem de
+      portarias, priorizadas por criticidade.
