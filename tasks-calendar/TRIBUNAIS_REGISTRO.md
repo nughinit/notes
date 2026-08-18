@@ -1,6 +1,6 @@
 # Court Registry -- Legal Calendar MongoDB
 
-> Generated 2026-08-18T21:29:32Z by querying MongoDB Atlas directly (`legal_calendar` DB, collections `courts`, `sources`, `coverage_gaps`). Static snapshot, not auto-refreshed -- regenerate whenever pipeline state changes.
+> Generated 2026-08-18T21:40:07Z by querying MongoDB Atlas directly (`legal_calendar` DB, collections `courts`, `sources`, `coverage_gaps`). Static snapshot, not auto-refreshed -- regenerate whenever pipeline state changes.
 
 ## Column legend
 
@@ -10,18 +10,15 @@
 | `lvl` | `coverage.level_number` (0-8). `8` = live official-source monitoring with persisted evidence. |
 | `adapter` | `source_family` -- the adapter/pipeline identifier the collector code writes into Mongo. Grep this string in `scripts/` to locate the collector, or filter `monitor_runs`/`audit_log` by `court_id` to find which script last touched it -- not a strict 1:1 filename mapping. |
 | `transport` | `source_type` -- how content is fetched/parsed: `HTML_PDF`, `SOAP_API`, `INTERNAL_SEARCH`, `SPA_SEARCH`, `REST_PUBLIC`, `HTML`. `SPA_SEARCH`/`INTERNAL_SEARCH` usually mean there is no stable public URL -- the adapter drives a search form or client-rendered endpoint. |
-| `readiness` | `readiness.*` bit flags: `src`=has_mapped_source, `ctr`=has_source_contract, `evt`=has_atomic_event, `mon`=l8_monitoring_started, `gap`=has_open_gap (`1`=true). A court can be `lvl=8` with `evt=0` -- L8 only requires proven monitoring, not necessarily an atomic change event yet. |
+| `readiness` | `readiness.*` bit flags: `src`=has_mapped_source, `ctr`=has_source_contract, `evt`=has_atomic_event, `mon`=l8_monitoring_started, `gap`=has_open_gap (`1`=true). Kept in sync with live `coverage_gaps` as of 2026-08-18 (see changelog). A court can be `lvl=8` with `evt=0` -- L8 only requires proven monitoring, not necessarily an atomic change event yet. |
 | `gap` | Open (`resolved:false`) `coverage_gaps.gap_type` for this court, if any. `SOURCE_COVERAGE_GAP` = missing a real amendment/revocation event needed to prove L7-equivalent change detection. |
 | `blocker` | `coverage.blocker` when present (usually null once at L8, kept for context). |
 | `source_url` | First active `sources.url` for the court (`+N` = additional active sources exist). `-` = no `sources` doc registered even though `courts.coverage.level` is L8 (discovery-only adapters like `TJ_SITEMAP_DISCOVERY` do not always populate `sources`). |
 | `updated_at` | `courts.updated_at`, UTC. |
 
-**Known data-quality issue:** `readiness.has_open_gap` (the `gap=` bit in the
-`readiness` column) is stale for 20 of the 21 courts that actually have an
-open `coverage_gaps` entry -- it reads `gap=0` even though the `gap` column
-shows `SOURCE_COVERAGE_GAP`. Trust the `gap` column (live `coverage_gaps`
-query), not the `readiness` bit, when checking whether a court has an open
-gap.
+## Changelog
+
+- 2026-08-18: fixed `readiness.has_open_gap` directly in MongoDB for 20 courts where it was stale (`false` while an unresolved `coverage_gaps` entry existed): `TJAC, TJAL, TJAP, TJAM, TJES, TJMG, TJPA, TJPE, TJPI, TJRJ, TJRO, TJRR, TJSP, TJSE, TRE-AP, TRE-MA, TRE-MS, TRE-PA, TRE-RO, TRE-SE`. The `readiness` column below now matches the `gap` column for all 92 courts (verified 0 mismatches after the fix).
 
 ## Summary
 
@@ -56,32 +53,32 @@ gap.
 
 | court_id | lvl | adapter | transport | readiness | gap | blocker | source_url | updated_at |
 |---|---|---|---|---|---|---|---|---|
-| `TJAC` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 17:19:13 |
-| `TJAL` | 8 | `SOFTPLAN_CDJ_E` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 16:58:53 |
-| `TJAM` | 8 | `SOFTPLAN_CDJ_E` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:22:10 |
-| `TJAP` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:44:15 |
+| `TJAC` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 17:19:13 |
+| `TJAL` | 8 | `SOFTPLAN_CDJ_E` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 16:58:53 |
+| `TJAM` | 8 | `SOFTPLAN_CDJ_E` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:22:10 |
+| `TJAP` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:44:15 |
 | `TJBA` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tjba.jus.br/portal/decreto-judiciario-es... | 2026-08-18 01:44:18 |
 | `TJCE` | 8 | `TJCE_DJEA_ATOS` | `HTML_PDF` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 17:19:17 |
 | `TJDFT` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 17:19:14 |
-| `TJES` | 8 | `TJES_EDIARIO` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 17:53:23 |
+| `TJES` | 8 | `TJES_EDIARIO` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 17:53:23 |
 | `TJGO` | 8 | `TJGO_TJDOCS` | `SPA_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 17:04:00 |
 | `TJMA` | 8 | `TJMA_ATOS` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 17:19:16 |
-| `TJMG` | 8 | `TJMG_DJE` | `HTML_PDF` | `src=1 ctr=0 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www8.tjmg.jus.br/servicos/gj/calendario/inde... | 2026-08-18 02:17:35 |
+| `TJMG` | 8 | `TJMG_DJE` | `HTML_PDF` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www8.tjmg.jus.br/servicos/gj/calendario/inde... | 2026-08-18 02:17:35 |
 | `TJMS` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 01:44:21 |
 | `TJMT` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 01:44:24 |
-| `TJPA` | 8 | `TJPA_DJE` | `SPA_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 17:06:48 |
+| `TJPA` | 8 | `TJPA_DJE` | `SPA_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 17:06:48 |
 | `TJPB` | 8 | `TJPB_DJE` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 18:38:47 |
-| `TJPE` | 8 | `TJPE_DJE` | `HTML_PDF` | `src=1 ctr=0 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://portal.tjpe.jus.br/-/tjpe-divulga-calend%C3%... | 2026-08-18 02:16:58 |
-| `TJPI` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:49:57 |
+| `TJPE` | 8 | `TJPE_DJE` | `HTML_PDF` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://portal.tjpe.jus.br/-/tjpe-divulga-calend%C3%... | 2026-08-18 02:16:58 |
+| `TJPI` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:49:57 |
 | `TJPR` | 8 | `TJPR_ATOS` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 17:37:19 |
-| `TJRJ` | 8 | `TJRJ_DJERJ` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=1 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www.tjrj.jus.br/documents/d/portal-conhecime... | 2026-08-18 17:53:26 |
+| `TJRJ` | 8 | `TJRJ_DJERJ` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=1 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www.tjrj.jus.br/documents/d/portal-conhecime... | 2026-08-18 17:53:26 |
 | `TJRN` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 01:35:15 |
-| `TJRO` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:29:20 |
-| `TJRR` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:44:27 |
+| `TJRO` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:29:20 |
+| `TJRR` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:44:27 |
 | `TJRS` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 18:15:08 |
 | `TJSC` | 8 | `OFFICIAL_PORTAL_PENDING` | `REST_PUBLIC` | `src=1 ctr=0 evt=1 mon=1 gap=0` | - | - | https://www.tjsc.jus.br/suspensao-de-prazos/pjsc (+2) | 2026-08-18 19:04:55 |
-| `TJSE` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:44:29 |
-| `TJSP` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=1 ctr=0 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www.tjsp.jus.br/CanaisComunicacao/Feriados/P... | 2026-08-18 01:50:50 |
+| `TJSE` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:44:29 |
+| `TJSP` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www.tjsp.jus.br/CanaisComunicacao/Feriados/P... | 2026-08-18 01:50:50 |
 | `TJTO` | 8 | `OFFICIAL_PORTAL_PENDING` | `HTML` | `src=0 ctr=1 evt=0 mon=1 gap=0` | - | - | - | 2026-08-18 01:44:33 |
 
 ## TJM - State Military Courts of Justice (3)
@@ -139,27 +136,27 @@ gap.
 | `TRE-AC` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-ac.jus.br/comunicacao/noticias/2026/... | 2026-08-18 01:07:48 |
 | `TRE-AL` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://app.tre-al.jus.br/eventos/calendario.do?exib... | 2026-08-17 00:00:00 |
 | `TRE-AM` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-am.jus.br/legislacao/compilada/porta... | 2026-08-18 01:08:11 |
-| `TRE-AP` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www.tre-ap.jus.br/legislacao/compilada/porta... | 2026-08-18 01:08:36 |
+| `TRE-AP` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www.tre-ap.jus.br/legislacao/compilada/porta... | 2026-08-18 01:08:36 |
 | `TRE-BA` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=1 mon=1 gap=0` | - | - | https://www.tre-ba.jus.br/legislacao/compilada/porta... | 2026-08-18 01:08:43 |
 | `TRE-CE` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-ce.jus.br/legislacao/compilada/porta... | 2026-08-18 01:09:04 |
 | `TRE-DF` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-df.jus.br/legislacao/compilada/porta... | 2026-08-18 01:09:10 |
 | `TRE-ES` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=1 mon=1 gap=0` | - | - | https://www.tre-es.jus.br/legislacao/compilada/ato/2... | 2026-08-18 01:09:32 |
 | `TRE-GO` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-go.jus.br/legislacao/compilada/porta... | 2026-08-18 01:09:47 |
-| `TRE-MA` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www.tre-ma.jus.br/legislacao/compilada/porta... | 2026-08-18 01:09:54 |
+| `TRE-MA` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www.tre-ma.jus.br/legislacao/compilada/porta... | 2026-08-18 01:09:54 |
 | `TRE-MG` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=1 evt=1 mon=1 gap=0` | - | - | https://www.tre-mg.jus.br/legislacao/portarias | 2026-08-18 01:10:01 |
-| `TRE-MS` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=1 evt=1 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www.tre-ms.jus.br/legislacao/portarias | 2026-08-18 01:10:09 |
+| `TRE-MS` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=1 evt=1 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www.tre-ms.jus.br/legislacao/portarias | 2026-08-18 01:10:09 |
 | `TRE-MT` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-mt.jus.br/legislacao/compilada/porta... | 2026-08-18 01:10:15 |
-| `TRE-PA` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=1 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:10:22 |
+| `TRE-PA` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=0 ctr=1 evt=1 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | - | 2026-08-18 01:10:22 |
 | `TRE-PB` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=1 mon=1 gap=0` | - | - | https://www.tre-pb.jus.br/comunicacao/noticias/2026/... | 2026-08-18 01:10:29 |
 | `TRE-PE` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=1 mon=1 gap=0` | - | - | https://www.tre-pe.jus.br/institucional/feriados (+1) | 2026-08-18 01:10:36 |
 | `TRE-PI` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-pi.jus.br/legislacao/portarias-norma... | 2026-08-18 01:10:47 |
 | `TRE-PR` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=1 evt=0 mon=1 gap=0` | - | - | https://www.tre-pr.jus.br/legislacao/compilada/porta... | 2026-08-18 01:10:54 |
 | `TRE-RJ` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-rj.jus.br/legislacao/compilada/atos-... | 2026-08-18 01:11:20 |
 | `TRE-RN` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-rn.jus.br/legislacao/compilada/atos-... | 2026-08-18 01:11:36 |
-| `TRE-RO` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www.tre-ro.jus.br/comunicacao/noticias/2025/... | 2026-08-18 01:11:42 |
+| `TRE-RO` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www.tre-ro.jus.br/comunicacao/noticias/2025/... | 2026-08-18 01:11:42 |
 | `TRE-RR` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-rr.jus.br/legislacao/portarias-do-tr... | 2026-08-18 01:11:56 |
 | `TRE-RS` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=1 evt=0 mon=1 gap=0` | - | - | https://www.tre-rs.jus.br/legislacao/normas-do-tre-r... | 2026-08-18 01:12:55 |
 | `TRE-SC` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=1 evt=0 mon=1 gap=0` | - | - | https://www.tre-sc.jus.br/legislacao/compilada/porta... | 2026-08-18 01:12:08 |
-| `TRE-SE` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | SOURCE_COVERAGE_GAP | - | https://www.tre-se.jus.br/legislacao/compilada/porta... | 2026-08-18 01:12:23 |
+| `TRE-SE` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=1` | SOURCE_COVERAGE_GAP | - | https://www.tre-se.jus.br/legislacao/compilada/porta... | 2026-08-18 01:12:23 |
 | `TRE-SP` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=1 evt=0 mon=1 gap=0` | - | - | https://www.tre-sp.jus.br/legislacao/compilada/porta... | 2026-08-18 01:12:39 |
 | `TRE-TO` | 8 | `TSE_TRE_DJE` | `INTERNAL_SEARCH` | `src=1 ctr=0 evt=0 mon=1 gap=0` | - | - | https://www.tre-to.jus.br/legislacao/compilada/resol... | 2026-08-18 01:12:47 |
