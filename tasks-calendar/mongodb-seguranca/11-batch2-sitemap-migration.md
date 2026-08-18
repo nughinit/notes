@@ -1,4 +1,4 @@
-# 11. Migrar os 17 tribunais restantes em sitemap genérico — 12/17 CORRIGIDOS ✅
+# 11. Migrar os 17 tribunais restantes em sitemap genérico — 13/17 CORRIGIDOS ✅
 
 Origem: levantamento pedido pelo usuário para saber quais dos 92 tribunais
 ainda usam fonte fraca (`TJ_SITEMAP_DISCOVERY`/`WORDPRESS_SITEMAP_BROWSER`/
@@ -190,30 +190,90 @@ cada ciclo de coleta — fora do escopo hoje, mesma categoria de risco
 já sinalizada na subtask
 [7](07-revisar-bypass-antibot.md).
 
-## Os 4 restantes — ainda não corrigidos
+## TJPB — corrigido em 2026-08-18 (o "precisa de Cloudflare bypass" documentado antes não se confirmou)
+A nota anterior (subtask [09](09-migrar-diario-real.md)) dizia que
+`app.tjpb.jus.br/dje/.../buscas.jsf` era protegido por desafio Cloudflare
+(JS proof-of-work) e que os links de edição eram só JSF AJAX sem endpoint
+REST direto — presumido como precisando de Playwright. Reinvestigado com
+browser real primeiro pra ver a chamada de rede real por trás do clique,
+depois confirmado que **tanto o GET inicial quanto o POST do postback
+funcionam com `urllib` puro + `http.cookiejar`, sem executar JS nenhum**:
+o script "challenge-platform" da Cloudflare presente na página é telemetria
+passiva de bot-management, não bloqueia essas requisições.
+
+Pipeline sem browser:
+1. GET `buscas.jsf` com um `CookieJar` novo (sessão + `JSESSIONID`)
+2. Regex extrai `javax.faces.ViewState` e o par nome/valor do postback JSF
+   do primeiro link "Diário de DD/MM/YYYY" (via seu atributo
+   `onclick="mojarra.jsfcljs(...)"`) — lido da página, não fixo no código,
+   pra não quebrar silenciosamente se a numeração dos componentes Mojarra
+   mudar
+3. POST na mesma URL (mesmos cookies) com os 3 campos → PDF puro
+   (`Content-Disposition: attachment; filename="diario_18-08-2026.pdf"`)
+4. Extrai texto com `pypdf` (14 páginas, 82.560 caracteres), valida
+   citação de ato real: "PORTARIA TJPB/GAPRES Nº 1.764 DE 14 DE AGOSTO DE
+   2026", "Publicação: terça-feira, 18 de agosto de 2026" (hoje)
+
+**Achado operacional**: requisições em sucessão rápida (sem pausa) levaram
+a um 403 da Cloudflare — não é bloqueio permanente, é rate-limit. O script
+final (`scripts/run_tj_batch6_l8.py`) espera 8s entre a primeira coleta e
+a segunda (idempotência), o que evitou o problema nas duas rodadas de
+teste.
+
+- [x] `scripts/run_tj_batch6_l8.py` criado, rodado, proposta aprovada
+      (`pending_promo_TJPB_fb65e0a536344a99`, `approved_by: Nicole`)
+- [x] Contrato antigo (`contract_TJPB_wp_sitemap`) marcado `superseded`
+- [x] Auditoria final: `STATUS PASS`, `critical=0`, `warn=0`; 62/62 testes
+
+## TRT17 e TJSC — reavaliados em 2026-08-18, continuam bloqueados (não é rate-limit temporário)
+Por pedido do usuário, reavaliei os dois bloqueios registrados numa rodada
+anterior pra ver se eram temporários:
+
+- **TRT17**: agora bloqueado até no nível de CDN/WAF — `curl` na home
+  retorna `x-amzn-waf-action: challenge` (AWS WAF challenge), confirmando
+  que o bloqueio de bot persiste e não era rate-limit de navegação rápida.
+  **Não contornado.**
+- **TJSC**: `curl` simples chegou a retornar 200 com a página real (sem
+  CAPTCHA), mas sem a listagem de atos (provavelmente carregada via JS/
+  AJAX que o `curl` não executa). Com browser real, a navegação segue
+  disparando a mesma página "Verificação de segurança do portal
+  institucional" pedindo código de imagem CAPTCHA vista antes — mesmo
+  bloqueio, não temporário. **Não contornado.**
+
+## Os 2 restantes — ainda não corrigidos
 | Tribunal | Situação |
 |---|---|
 | TJRO | Akamai bloqueia até o browser real na home ("Página Bloqueada"); `curl` retorna 200 mas com script de desafio, não conteúdo real |
 | TJMSP | fonte real encontrada com browser (`atos-e-comunicados/`), mas Akamai retorna 403 pra qualquer cliente HTTP simples, mesmo com headers de browser completos |
-| TJPB | já documentado em [09](09-migrar-diario-real.md) — Cloudflare + JSF AJAX sem API direta |
-| TRT17 | bloqueado por Human Verification numa rodada anterior (ver acima) |
-| TJSC | bloqueado por CAPTCHA de imagem numa rodada anterior (ver acima) |
+
+Nota: TRT17 e TJSC (bloqueados por CAPTCHA/verificação humana explícita)
+seguem contados como pendentes fora desta tabela — política proíbe
+contornar esse tipo de desafio, então não há próximo passo técnico pra
+eles além de reavaliar de novo mais tarde ou achar fonte alternativa.
+
+## Decisão do usuário (2026-08-18): TJRO/TJMSP adiados
+Perguntado se valeria construir um coletor Playwright pra TJRO/TJMSP
+(mesma categoria de risco da subtask [7](07-revisar-bypass-antibot.md) —
+rodar browser completo por ciclo de coleta), o usuário escolheu **adiar
+essa decisão** e focar primeiro no que não tinha sido tentado (TJPB,
+resolvido) ou podia ser reavaliado (TRT17/TJSC, confirmados ainda
+bloqueados, não eram rate-limit). Pergunta sobre TJRO/TJMSP continua em
+aberto pra próxima sessão.
 
 ## Próximos passos sugeridos
-- [ ] TJRO e TJMSP: ambos exigem rodar um browser completo por ciclo de
-      coleta (Akamai bloqueia clientes HTTP simples) — decidir se vale
-      construir um coletor baseado em Playwright pra esses dois
-      especificamente (ver preocupação já registrada na subtask
-      [7](07-revisar-bypass-antibot.md)) ou tratar como definitivamente
-      fora do alcance sem API paga
-- [ ] Para TRT17/TJSC (bloqueados por verificação humana/bot): avaliar se
-      vale reter e tentar de novo mais tarde (pode ser rate-limit
-      temporário por navegação rápida) ou se há fonte alternativa do
-      mesmo tribunal
+- [ ] TJRO e TJMSP: decisão pendente do usuário sobre construir um
+      coletor Playwright (ver acima) ou tratar como definitivamente fora
+      do alcance sem API paga
+- [ ] TRT17/TJSC: bloqueio confirmado não-temporário nesta rodada: avaliar
+      fonte alternativa do mesmo tribunal, ou aceitar como fora do alcance
 - [ ] Reavaliar aqui a opção de API paga (Escavador/Judit.io) discutida
-      antes, para os casos que continuarem resistentes após uma segunda
-      tentativa
+      antes, para os casos que continuarem resistentes
 - [ ] Nota geral do achado TJRS: quando um índice de busca institucional
       (GSA ou similar) existe mas parece obsoleto, vale checar se há um
       widget de "última edição" na home que não passa pela busca — foi
       esse o padrão que resolveu o TJRS depois de dois índices mortos
+- [ ] Nota geral do achado TJPB: um "precisa de Playwright" documentado
+      antes vale reinvestigar com browser real primeiro (pra ver a
+      chamada de rede de verdade) antes de assumir que só funciona com
+      JS — o bloqueio Cloudflare nesse caso era só telemetria passiva,
+      não um desafio de fato gating as requisições
